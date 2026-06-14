@@ -1,0 +1,25 @@
+// Скопируй этот файл в config.h и впиши свои значения.
+// config.h в репозиторий не коммитится.
+
+#pragma once
+
+// --- Wi-Fi (только 2.4 GHz; ESP8266 не умеет 5 GHz) ---
+#define WIFI_SSID     "YourWiFiName"
+#define WIFI_PASS     "YourWiFiPassword"
+
+// --- Сервер рулетки ---
+// IP ноута, на котором запущен FastAPI (узнать: `ipconfig getifaddr en0` на маке).
+// Должен быть в той же локальной сети, что и ESP.
+#define SERVER_HOST   "192.168.1.100"
+#define SERVER_PORT   8000
+#define WS_PATH       "/ws"
+
+// --- Пины TM1638 (LED&KEY) ---
+// Можно поменять при необходимости.
+#define PIN_STB       D4   // GPIO2
+#define PIN_CLK       D5   // GPIO14
+#define PIN_DIO       D6   // GPIO12
+
+// --- Параметры геймплея ---
+#define BET_STEP      10   // шаг изменения суммы (S6/S7)
+#define MIN_BET       10   // минимальная ставка

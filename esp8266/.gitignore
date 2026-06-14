@@ -1,0 +1,4 @@
+roulette_client/config.h
+build/
+.pio/
+.vscode/

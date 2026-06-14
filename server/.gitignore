@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+casino.db
+casino.db-journal
+.env
