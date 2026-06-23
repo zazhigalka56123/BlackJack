@@ -1,14 +1,14 @@
 const STATUS_LABEL = {
-  connecting: 'Подключение…',
-  connected: 'В сети',
-  disconnected: 'Нет связи',
+  connecting: 'CONNECT',
+  connected: 'ONLINE',
+  disconnected: 'OFFLINE',
 }
 
 export function ConnectionStatus({ status }) {
   return (
-    <div className={`connection-status status-${status}`}>
-      <span className="status-dot" />
+    <span className={`conn ${status}`}>
+      <span className="dot" />
       {STATUS_LABEL[status] || status}
-    </div>
+    </span>
   )
 }

@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { WHEEL_ORDER, colorOf } from '../roulette.js'
 
-const SIZE = 360
+const SIZE = 300
 const CENTER = SIZE / 2
-const OUTER_R = 170
-const INNER_R = 110
-const NUM_R = 140
-const STEP = 360 / WHEEL_ORDER.length // ~9.73°
+const OUTER_R = 141
+const INNER_R = 92
+const NUM_R = 117
+const HUB_R = 44
+const STEP = 360 / WHEEL_ORDER.length
 
 function colorHex(c) {
-  return { RED: '#c92a2a', BLACK: '#1a1a1a', GREEN: '#2b8a3e' }[c]
+  return { RED: '#b81818', BLACK: '#0d0d0d', GREEN: '#0a8a3a' }[c]
+}
+function numHex(c) {
+  return c === 'GREEN' ? '#bfffd0' : '#ffe9b0'
 }
 
 function polar(cx, cy, r, angleDeg) {
@@ -36,7 +40,6 @@ function sectorPath(i) {
 function targetAngleFor(number) {
   const idx = WHEEL_ORDER.indexOf(number)
   if (idx < 0) return 0
-  // указатель сверху (0°). Нужно довернуть колесо так, чтобы сектор idx оказался под ним.
   return -(idx * STEP)
 }
 
@@ -50,6 +53,7 @@ export function RouletteWheel({ phase, result }) {
         n,
         path: sectorPath(i),
         labelPos: polar(CENTER, CENTER, NUM_R, i * STEP),
+        rot: i * STEP,
         color: colorOf(n),
       })),
     []
@@ -59,36 +63,41 @@ export function RouletteWheel({ phase, result }) {
     if (phase !== 'SPINNING' || !result) return
     if (lastResultRef.current === result.number) return
     lastResultRef.current = result.number
-    // несколько полных оборотов + точная позиция
     const base = targetAngleFor(result.number)
     setAngle((prev) => {
-      // увеличиваем угол так, чтобы он всегда рос (избегаем обратного отката)
       const fullTurns = 6 * 360
       const current = prev % 360
-      const delta = ((base - current) % 360 + 360) % 360
+      const delta = (((base - current) % 360) + 360) % 360
       return prev + fullTurns + delta
     })
   }, [phase, result])
 
-  // в BETTING сбрасываем lastResult чтобы новая SPINNING фаза снова прокрутила
   useEffect(() => {
     if (phase === 'BETTING') lastResultRef.current = null
   }, [phase])
 
   const isSpinning = phase === 'SPINNING'
+  const showResult = phase === 'RESULT' && result
 
   return (
     <div className="wheel-wrap">
       <div className="wheel-pointer" />
-      <svg className="wheel" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-        <circle cx={CENTER} cy={CENTER} r={OUTER_R + 8} fill="#5a3a1a" />
+      <svg
+        className="wheel-svg"
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx={CENTER} cy={CENTER} r={OUTER_R + 7} fill="#caa44a" />
+        <circle cx={CENTER} cy={CENTER} r={OUTER_R + 3} fill="#3a2e10" />
+
         <g
+          className="wheel-rotor"
           style={{
             transform: `rotate(${angle}deg)`,
             transformOrigin: `${CENTER}px ${CENTER}px`,
-            transition: isSpinning
-              ? 'transform 4s cubic-bezier(.18,.72,.22,1)'
-              : 'none',
+            transition: isSpinning ? 'transform 4s cubic-bezier(.18,.72,.22,1)' : 'none',
           }}
         >
           {sectors.map((s, i) => (
@@ -97,24 +106,49 @@ export function RouletteWheel({ phase, result }) {
               <text
                 x={s.labelPos[0]}
                 y={s.labelPos[1]}
-                fill="#fff"
-                fontSize="13"
-                fontWeight="700"
+                fill={numHex(s.color)}
+                fontSize="8"
+                fontFamily="'Press Start 2P', monospace"
                 textAnchor="middle"
                 dominantBaseline="central"
-                transform={`rotate(${i * STEP} ${s.labelPos[0]} ${s.labelPos[1]})`}
+                transform={`rotate(${s.rot} ${s.labelPos[0]} ${s.labelPos[1]})`}
               >
                 {s.n}
               </text>
             </g>
           ))}
-          <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="#3a2410" />
-          <circle cx={CENTER} cy={CENTER} r={40} fill="#7a5230" stroke="#3a2410" strokeWidth="3" />
+          <circle cx={CENTER} cy={CENTER} r={INNER_R} fill="#060606" stroke="#2a2a2a" strokeWidth="3" />
         </g>
+
+        <circle cx={CENTER} cy={CENTER} r={HUB_R} fill="#0a0c10" stroke="#caa44a" strokeWidth="2" />
+        {showResult ? (
+          <text
+            x={CENTER}
+            y={CENTER + 2}
+            fill={numHex(result.color)}
+            fontSize="44"
+            fontFamily="'VT323', monospace"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ filter: 'drop-shadow(0 0 8px rgba(255,176,0,.7))' }}
+          >
+            {result.number}
+          </text>
+        ) : (
+          <text
+            x={CENTER}
+            y={CENTER + 1}
+            fill="#39ff14"
+            fontSize="11"
+            fontFamily="'Press Start 2P', monospace"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{ filter: 'drop-shadow(0 0 6px #39ff14)' }}
+          >
+            SPIN
+          </text>
+        )}
       </svg>
-      {phase === 'RESULT' && result && (
-        <div className="wheel-result-badge">{result.number}</div>
-      )}
     </div>
   )
 }

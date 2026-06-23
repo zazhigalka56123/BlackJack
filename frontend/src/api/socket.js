@@ -21,8 +21,16 @@ export class GameSocket {
     this.ws = null
     this.reconnectAttempts = 0
     this.reconnectTimer = null
+    this.offlineTimer = null
     this.closedByUser = false
     this.playerId = null
+    this.lastStatus = null
+  }
+
+  _setStatus(s) {
+    if (this.lastStatus === s) return
+    this.lastStatus = s
+    this.onStatusChange(s)
   }
 
   connect(playerId) {
@@ -32,7 +40,7 @@ export class GameSocket {
   }
 
   _open() {
-    this.onStatusChange('connecting')
+    this._setStatus('connecting')
     this._sys(`connecting → ${this.url}`)
     try {
       this.ws = new WebSocket(this.url)
@@ -44,7 +52,9 @@ export class GameSocket {
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0
-      this.onStatusChange('connected')
+      clearTimeout(this.offlineTimer)
+      this.offlineTimer = null
+      this._setStatus('connected')
       this._sys('open')
       this.send({ type: 'join', player_id: this.playerId })
     }
@@ -60,7 +70,15 @@ export class GameSocket {
     }
 
     this.ws.onclose = (event) => {
-      this.onStatusChange('disconnected')
+      // Если был coonnected — не паникуем сразу. Сначала пробуем тихо переподключиться;
+      // 'disconnected' покажем только если реконнект не успел.
+      if (this.lastStatus === 'connected') {
+        this._setStatus('connecting')
+        clearTimeout(this.offlineTimer)
+        this.offlineTimer = setTimeout(() => this._setStatus('disconnected'), 1500)
+      } else {
+        this._setStatus('disconnected')
+      }
       this._sys(`close code=${event.code} reason="${event.reason || ''}"`)
       if (!this.closedByUser) this._scheduleReconnect()
     }
@@ -127,6 +145,7 @@ export class GameSocket {
   close() {
     this.closedByUser = true
     clearTimeout(this.reconnectTimer)
+    clearTimeout(this.offlineTimer)
     if (this.ws) this.ws.close()
   }
 }

@@ -1,7 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { GameSocket } from '../api/socket.js'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
+// Адрес WS определяется автоматически из хоста, с которого открыта страница,
+// чтобы фронт работал и при заходе по IP ноута с других устройств в локалке.
+// Порт сервера можно переопределить через VITE_SERVER_PORT, а весь URL — через VITE_WS_URL.
+function resolveWsUrl() {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  const host = window.location.hostname || 'localhost'
+  const port = import.meta.env.VITE_SERVER_PORT || '8000'
+  return `${proto}://${host}:${port}/ws`
+}
+
+const WS_URL = resolveWsUrl()
 const PLAYER_ID_KEY = 'roulette-browser-id'
 
 function getOrCreatePlayerId() {

@@ -1,50 +1,81 @@
 import { useGameSocket } from './hooks/useGameSocket.js'
+import { Marquee } from './components/Marquee.jsx'
 import { RouletteWheel } from './components/RouletteWheel.jsx'
-import { PhaseTimer } from './components/PhaseTimer.jsx'
-import { PlayerList } from './components/PlayerList.jsx'
+import { SegDisplay } from './components/SegDisplay.jsx'
 import { BettingBoard } from './components/BettingBoard.jsx'
-import { ResultBanner } from './components/ResultBanner.jsx'
 import { HistoryStrip } from './components/HistoryStrip.jsx'
 import { ConnectionStatus } from './components/ConnectionStatus.jsx'
+import { ControlPanel } from './components/ControlPanel.jsx'
+
+const PHASE_NAME = {
+  BETTING: 'BETTING',
+  SPINNING: 'SPINNING',
+  RESULT: 'RESULT',
+}
 
 export default function App() {
   const game = useGameSocket()
 
+  const pot = (game.players || []).reduce(
+    (sum, p) => sum + (p.bet ? p.bet.amount : 0),
+    0
+  )
+  const playersCount = (game.players || []).length
+  const timer = Math.max(0, game.timer)
+  const lowTimer = game.phase === 'BETTING' && timer <= 5
+
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>🎰 IoT Roulette</h1>
-        <div className="header-right">
-          <span className="round-id">Раунд #{game.roundId}</span>
-          <ConnectionStatus status={game.status} />
+    <div className={`app phase-${game.phase.toLowerCase()}`}>
+      <div className="cab">
+        <Marquee />
+
+        <div className="crt">
+          <div className="crt-head">
+            <ConnectionStatus status={game.status} />
+            <span className="phase-name">{PHASE_NAME[game.phase] || game.phase}</span>
+            <span className="rnd" />
+          </div>
+
+          <div className="stage">
+            <div className="stage-col left">
+              <SegDisplay
+                label="TIMER"
+                kind="timer"
+                value={timer}
+                lowTimer={lowTimer}
+              />
+              <SegDisplay label="POT" kind="pot" value={pot} />
+            </div>
+
+            <div className="stage-wheel">
+              <RouletteWheel phase={game.phase} result={game.result} />
+            </div>
+
+            <div className="stage-col right">
+              <SegDisplay
+                label="PLAYERS"
+                kind="players"
+                value={playersCount}
+                live={game.status === 'connected'}
+              />
+            </div>
+          </div>
+
+          <BettingBoard
+            players={game.players}
+            phase={game.phase}
+            result={game.result}
+          />
+
+          <HistoryStrip history={game.history} />
         </div>
-      </header>
 
-      <HistoryStrip history={game.history} />
-
-      <main className="app-main">
-        <section className="wheel-section">
-          <RouletteWheel phase={game.phase} result={game.result} />
-          {game.phase === 'RESULT' && <ResultBanner result={game.result} />}
-        </section>
-
-        <aside className="side">
-          <PhaseTimer phase={game.phase} timer={game.timer} />
-          <PlayerList players={game.players} />
-        </aside>
-      </main>
-
-      <section className="board-section">
-        <BettingBoard
-          players={game.players}
+        <ControlPanel
           phase={game.phase}
+          players={game.players}
           result={game.result}
         />
-      </section>
-
-      <footer className="app-footer">
-        Ставки делаются с физических устройств ESP8266. Браузер — наблюдатель.
-      </footer>
+      </div>
     </div>
   )
 }

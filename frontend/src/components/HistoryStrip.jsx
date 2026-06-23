@@ -2,17 +2,13 @@ import { colorOf } from '../roulette.js'
 
 export function HistoryStrip({ history }) {
   return (
-    <div className="history-strip">
-      <span className="history-label">История:</span>
-      {history.length === 0 && <span className="history-empty">пока пусто</span>}
+    <div className="last-strip">
+      <span className="last-label">LAST</span>
+      {history.length === 0 && <span className="last-empty">-- -- --</span>}
       {history.map((h, i) => {
-        const c = h.color || colorOf(h.number)
+        const c = (h.color || colorOf(h.number)).toLowerCase()
         return (
-          <span
-            key={i}
-            className={`history-chip history-${c.toLowerCase()}`}
-            title={c}
-          >
+          <span key={i} className={`last-chip ${c}`} title={c}>
             {h.number}
           </span>
         )
